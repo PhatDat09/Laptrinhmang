@@ -4,17 +4,39 @@
  */
 package doan_laptrinhmang;
 
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.net.Socket;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import javax.swing.JOptionPane;
+
 /**
  *
  * @author admin
  */
 public class frm_Client extends javax.swing.JFrame {
 
+    static Socket s;
+    static DataOutputStream dout;
+    static DataInputStream dis;
+
     /**
      * Creates new form frm_Client
      */
     public frm_Client() {
         initComponents();
+        txt_messageArea.setEditable(false); // Ngăn không cho nhập vào
+        txt_messageArea.setFocusable(false); // Ngăn con trỏ chuột vào
+        txt_messageSend.requestFocus();    // Đặt con trỏ vào txt_messageSend
+        txt_messageSend.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyPressed(java.awt.event.KeyEvent evt) {
+                if (evt.getKeyCode() == java.awt.event.KeyEvent.VK_ENTER) {  // Kiểm tra nếu nhấn phím Enter
+                    btn_sendActionPerformed(null);  // Gọi hàm gửi tin nhắn
+                }
+            }
+        });
     }
 
     /**
@@ -26,21 +48,108 @@ public class frm_Client extends javax.swing.JFrame {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
+        jLabel1 = new javax.swing.JLabel();
+        txt_messageSend = new javax.swing.JTextField();
+        jScrollPane1 = new javax.swing.JScrollPane();
+        txt_messageArea = new javax.swing.JTextArea();
+        btn_send = new javax.swing.JButton();
+
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+
+        jLabel1.setFont(new java.awt.Font("Arial", 1, 24)); // NOI18N
+        jLabel1.setText("CLIENT");
+
+        txt_messageArea.setColumns(20);
+        txt_messageArea.setRows(5);
+        jScrollPane1.setViewportView(txt_messageArea);
+
+        btn_send.setText("Gửi");
+        btn_send.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btn_sendActionPerformed(evt);
+            }
+        });
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 400, Short.MAX_VALUE)
+            .addGroup(layout.createSequentialGroup()
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(layout.createSequentialGroup()
+                        .addGap(220, 220, 220)
+                        .addComponent(jLabel1, javax.swing.GroupLayout.PREFERRED_SIZE, 96, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addGroup(layout.createSequentialGroup()
+                        .addGap(17, 17, 17)
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                            .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 570, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addGroup(layout.createSequentialGroup()
+                                .addComponent(txt_messageSend, javax.swing.GroupLayout.PREFERRED_SIZE, 386, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                .addComponent(btn_send)
+                                .addGap(37, 37, 37)))))
+                .addContainerGap(15, Short.MAX_VALUE))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 300, Short.MAX_VALUE)
+            .addGroup(layout.createSequentialGroup()
+                .addContainerGap()
+                .addComponent(jLabel1, javax.swing.GroupLayout.PREFERRED_SIZE, 38, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 287, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(txt_messageSend, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(btn_send))
+                .addGap(22, 22, 22))
         );
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
+
+    private void btn_sendActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btn_sendActionPerformed
+        // TODO add your handling code here:
+        try {
+            String msg = txt_messageSend.getText();
+            LocalDateTime now = LocalDateTime.now();
+            DateTimeFormatter dtf = DateTimeFormatter.ofPattern("HH:mm:ss");
+            String formattedTime = dtf.format(now);
+
+            dout.writeUTF(msg + " (" + formattedTime + ")");
+            txt_messageArea.append("\n [Client - " + formattedTime + "]: " + msg);
+            txt_messageSend.setText("");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }//GEN-LAST:event_btn_sendActionPerformed
+
+    private static void receiveFileFromServer() {
+        try {
+            // Nhận thông báo về file từ server
+            String fileNotification = dis.readUTF();
+            // Nhận nội dung file
+            String fileContent = dis.readUTF();
+
+            // Hiển thị thông báo cho người dùng có muốn mở file hay không
+            int choice = JOptionPane.showConfirmDialog(null, fileNotification + "\nBạn có muốn mở file này không?",
+                    "Mở file", JOptionPane.YES_NO_OPTION);
+
+            if (choice == JOptionPane.YES_OPTION) {
+                // Nếu người dùng chọn YES, hiển thị nội dung file
+                displayFileContent(fileContent);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static void displayFileContent(String content) {
+        // Mở form frm_Tracnghiem và hiển thị nội dung file
+        frm_Tracnghiem tracnghiem = new frm_Tracnghiem();
+        tracnghiem.setVisible(true);
+        tracnghiem.setLocation(400, 100);
+        tracnghiem.setFileContent(content);  // Gọi phương thức setFileContent để hiển thị nội dung file
+    }
 
     /**
      * @param args the command line arguments
@@ -72,11 +181,37 @@ public class frm_Client extends javax.swing.JFrame {
         /* Create and display the form */
         java.awt.EventQueue.invokeLater(new Runnable() {
             public void run() {
-                new frm_Client().setVisible(true);
+                frm_Client client = new frm_Client();
+                client.setVisible(true);
+                client.setLocation(900, 100); // Đặt cửa sổ client ở bên trái, bạn có thể điều chỉnh giá trị tọa độ
             }
         });
+        try {
+            System.out.println("Connecting to server...");
+            s = new Socket("127.0.0.1", 1201); // Kết nối đến server trên cổng 1201
+            System.out.println("Connected to server!");
+
+            dis = new DataInputStream(s.getInputStream());
+            dout = new DataOutputStream(s.getOutputStream());
+
+            String msgin = "";
+            while (!msgin.equals("exit")) {
+                msgin = dis.readUTF(); // Đọc tin nhắn từ server
+                txt_messageArea.append("\n" + msgin); // Hiển thị đúng định dạng đã gửi từ server
+            }
+            // Nhận file từ server
+            receiveFileFromServer();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JButton btn_send;
+    private javax.swing.JLabel jLabel1;
+    private javax.swing.JScrollPane jScrollPane1;
+    private static javax.swing.JTextArea txt_messageArea;
+    private javax.swing.JTextField txt_messageSend;
     // End of variables declaration//GEN-END:variables
 }

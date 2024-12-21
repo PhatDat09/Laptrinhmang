@@ -4,17 +4,46 @@
  */
 package doan_laptrinhmang;
 
+import java.io.BufferedReader;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import javax.swing.JFileChooser;
+
 /**
  *
  * @author admin
  */
 public class frm_Server extends javax.swing.JFrame {
 
+    static ServerSocket ss;
+    static Socket s;
+    static DataOutputStream dout;
+    static DataInputStream dis;
+
     /**
      * Creates new form frm_Server
      */
     public frm_Server() {
         initComponents();
+        txt_messageArea.setEditable(false); // Ngăn không cho nhập vào
+        txt_messageArea.setFocusable(false); // Ngăn con trỏ chuột vào
+        txt_messageSend.requestFocus();    // Đặt con trỏ vào txt_messageSend
+        txt_messageSend.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyPressed(java.awt.event.KeyEvent evt) {
+                if (evt.getKeyCode() == java.awt.event.KeyEvent.VK_ENTER) {  // Kiểm tra nếu nhấn phím Enter
+                    btn_sendActionPerformed(null);  // Gọi hàm gửi tin nhắn
+                }
+            }
+        });
     }
 
     /**
@@ -26,32 +55,135 @@ public class frm_Server extends javax.swing.JFrame {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
-        jFileChooser1 = new javax.swing.JFileChooser();
-        btn_Duongdan = new javax.swing.JButton();
+        jLabel1 = new javax.swing.JLabel();
+        jScrollPane1 = new javax.swing.JScrollPane();
+        txt_messageArea = new javax.swing.JTextArea();
+        txt_messageSend = new javax.swing.JTextField();
+        btn_send = new javax.swing.JButton();
+        btn_file = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
-        btn_Duongdan.setText("Chọn đường dẫn");
+        jLabel1.setFont(new java.awt.Font("Arial", 1, 24)); // NOI18N
+        jLabel1.setText("SERVER");
+
+        txt_messageArea.setColumns(20);
+        txt_messageArea.setRows(5);
+        jScrollPane1.setViewportView(txt_messageArea);
+
+        btn_send.setText("Gửi");
+        btn_send.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btn_sendActionPerformed(evt);
+            }
+        });
+
+        btn_file.setText("File");
+        btn_file.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btn_fileActionPerformed(evt);
+            }
+        });
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
-                .addContainerGap(226, Short.MAX_VALUE)
-                .addComponent(btn_Duongdan)
-                .addGap(55, 55, 55))
+            .addGroup(layout.createSequentialGroup()
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(layout.createSequentialGroup()
+                        .addGap(17, 17, 17)
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 570, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addGroup(layout.createSequentialGroup()
+                                .addComponent(txt_messageSend, javax.swing.GroupLayout.PREFERRED_SIZE, 386, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addGap(18, 18, 18)
+                                .addComponent(btn_send)
+                                .addGap(18, 18, 18)
+                                .addComponent(btn_file))))
+                    .addGroup(layout.createSequentialGroup()
+                        .addGap(220, 220, 220)
+                        .addComponent(jLabel1, javax.swing.GroupLayout.PREFERRED_SIZE, 112, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                .addContainerGap(11, Short.MAX_VALUE))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
-                .addGap(70, 70, 70)
-                .addComponent(btn_Duongdan)
-                .addContainerGap(207, Short.MAX_VALUE))
+                .addContainerGap()
+                .addComponent(jLabel1, javax.swing.GroupLayout.PREFERRED_SIZE, 38, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 283, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(txt_messageSend, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(btn_send)
+                    .addComponent(btn_file))
+                .addGap(22, 22, 22))
         );
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
+
+    private void btn_sendActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btn_sendActionPerformed
+        // TODO add your handling code here:
+        // TODO add your handling code here:
+        try {
+            String msg = txt_messageSend.getText();
+            LocalDateTime now = LocalDateTime.now();
+            DateTimeFormatter dtf = DateTimeFormatter.ofPattern("HH:mm:ss");
+            String formattedTime = dtf.format(now);
+
+            String formattedMsg = "[Server - " + formattedTime + "]: " + msg; // Định dạng tin nhắn
+            dout.writeUTF(formattedMsg); // Gửi tin nhắn
+            txt_messageArea.append("\n" + formattedMsg); // Hiển thị trên server
+            txt_messageSend.setText(""); // Xóa TextField sau khi gửi
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }//GEN-LAST:event_btn_sendActionPerformed
+
+    private void btn_fileActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btn_fileActionPerformed
+        // TODO add your handling code here:
+        JFileChooser fileChooser = new JFileChooser();
+        fileChooser.setDialogTitle("Chọn File");  // Tiêu đề của hộp thoại
+        fileChooser.setFileFilter(new javax.swing.filechooser.FileNameExtensionFilter("Text Files", "txt"));
+
+        int result = fileChooser.showOpenDialog(this);
+        if (result == JFileChooser.APPROVE_OPTION) {
+            File selectedFile = fileChooser.getSelectedFile();
+            sendFileToClient(selectedFile);  // Gửi file đến client
+        }
+    }//GEN-LAST:event_btn_fileActionPerformed
+
+    private static void sendFileToClient(File file) {
+        try {
+            // Kiểm tra xem client đã kết nối chưa
+            if (s == null || s.isClosed()) {
+                System.out.println("Client chưa kết nối.");
+                return;
+            }
+
+            dout.writeUTF("Server đã chọn file: " + file.getName());  // Gửi thông báo về file
+            dout.writeLong(file.length());  // Gửi kích thước file
+
+            // Đọc nội dung file và gửi cho client
+            BufferedReader reader = new BufferedReader(new FileReader(file));
+            String line;
+            StringBuilder fileContent = new StringBuilder();
+            while ((line = reader.readLine()) != null) {
+                fileContent.append(line).append("\n");
+            }
+
+            dout.writeUTF(fileContent.toString());  // Gửi nội dung file cho client
+            dout.flush(); // Đảm bảo dữ liệu được gửi ngay lập tức
+
+            reader.close();
+            System.out.println("File đã được gửi thành công.");
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.out.println("Lỗi khi gửi file.");
+        }
+    }
 
     /**
      * @param args the command line arguments
@@ -83,13 +215,45 @@ public class frm_Server extends javax.swing.JFrame {
         /* Create and display the form */
         java.awt.EventQueue.invokeLater(new Runnable() {
             public void run() {
-                new frm_Server().setVisible(true);
+                frm_Server server = new frm_Server();
+                server.setVisible(true);
+                server.setLocation(100, 100); // Đặt cửa sổ server ở bên phải, bạn có thể điều chỉnh giá trị tọa độ
             }
         });
+
+        try {
+            System.out.println("Server is starting...");
+            ss = new ServerSocket(1201); // Server lắng nghe trên cổng 1201
+            System.out.println("Server is waiting for a client...");
+            s = ss.accept(); // Chờ client kết nối
+            System.out.println("Client connected!");
+
+            dis = new DataInputStream(s.getInputStream());
+            dout = new DataOutputStream(s.getOutputStream());
+
+            String msgin = "";
+
+            while (!msgin.equals("exit")) {
+                msgin = dis.readUTF(); // Đọc tin nhắn từ client
+                LocalDateTime now = LocalDateTime.now();
+                DateTimeFormatter dtf = DateTimeFormatter.ofPattern("HH:mm:ss");
+                String formattedTime = dtf.format(now);
+
+                // Chỉ hiển thị tin nhắn mà không bao gồm thời gian gửi của client
+                String formattedMsg = "[Client - " + formattedTime + "]: " + msgin.split(" \\(")[0]; // Loại bỏ thời gian trong dấu ngoặc
+                txt_messageArea.append("\n" + formattedMsg); // Hiển thị tin nhắn client lên server
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.JButton btn_Duongdan;
-    private javax.swing.JFileChooser jFileChooser1;
+    private javax.swing.JButton btn_file;
+    private javax.swing.JButton btn_send;
+    private javax.swing.JLabel jLabel1;
+    private javax.swing.JScrollPane jScrollPane1;
+    private static javax.swing.JTextArea txt_messageArea;
+    private javax.swing.JTextField txt_messageSend;
     // End of variables declaration//GEN-END:variables
 }
